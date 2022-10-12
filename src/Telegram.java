@@ -25,21 +25,19 @@ import java.net.URISyntaxException;
 
 public class Telegram {
 
-    private Authenticator authenticator = null;
-    private Proxy proxy = null;
-    private HttpURLConnection con = null;
-    private String boundary = "---------- TelegramJava";
-    private String crlf = "\r\n";
-    private String twoHyphens = "--";
+    private Authenticator authenticator;
+    private Proxy proxy;
+    private HttpURLConnection con;
+    private final String boundary = "---------- TelegramJava";
+    private final String crlf = "\r\n";
+    private final String twoHyphens = "--";
 
     private String authUser = "";
     private String authPassword = "";
-    private String proxyHost = "192.168.2.14";
-    private int proxyPort = 3128;
+    private final String proxyHost = "192.168.2.14";
+    private final int proxyPort = 3128;
 
     public String urlAPI = "api.telegram.org";
-
-    private String chatID = "-1001784403260";
 
     public Telegram (String username, String password) {
         this.authUser = username + "@dipvvf.it";
@@ -68,6 +66,7 @@ public class Telegram {
                 .setProxy(proxy)
                 .build();
 
+        String chatID = "-1001784403260";
         String uri = "https://" + urlAPI + "/bot5114900339:AAEiEpTI3c2Nt52eaf35FOS-7EXtxwMriGY/sendDocument?chat_id=" + chatID;
 
         try (final CloseableHttpClient httpclient = HttpClients.custom().setDefaultCredentialsProvider(credsProvider).build()) {
@@ -80,6 +79,49 @@ public class Telegram {
             MultipartEntityBuilder builder = MultipartEntityBuilder.create();
             builder.addBinaryBody(
                     "document", new File(strFileAbsPath), ContentType.APPLICATION_PDF, "orario_funzionari.pdf");
+
+            HttpEntity multipart = builder.build();
+            httppost.setEntity(multipart);
+
+            try (final CloseableHttpResponse response = httpclient.execute(httppost)) {
+                System.out.println("----------------------------------------");
+                System.out.println(response.getCode() + " " + response.getReasonPhrase());
+                System.out.println(EntityUtils.toString(response.getEntity()));
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+        }
+        System.out.println("Terminato invio dell'orario.");
+    }
+
+    public void sendPDF(String chatID, File file) throws IOException {
+        String strFileAbsPath = file.getAbsolutePath();
+        String filename = file.getName();
+
+        // Autenticazione del Client sul Proxy
+        final BasicCredentialsProvider credsProvider = new BasicCredentialsProvider();
+        credsProvider.setCredentials(
+                new AuthScope(proxyHost, proxyPort),
+                new UsernamePasswordCredentials(authUser, authPassword.toCharArray()));
+
+        // Creazione e configurazione del proxy per la request
+        final HttpHost proxy = new HttpHost(proxyHost, proxyPort);
+        final RequestConfig config = RequestConfig.custom()
+                .setProxy(proxy)
+                .build();
+
+        String uri = "https://" + urlAPI + "/bot5114900339:AAEiEpTI3c2Nt52eaf35FOS-7EXtxwMriGY/sendDocument?chat_id=" + chatID;
+
+        try (final CloseableHttpClient httpclient = HttpClients.custom().setDefaultCredentialsProvider(credsProvider).build()) {
+
+            final HttpPost httppost = new HttpPost(uri);
+            httppost.setConfig(config);
+            httppost.setHeader("User-Agent", "Comando VVF Savona");
+            //httppost.setHeader("Content-Type", "multipart/form-data;boundary=" + this.boundary);
+
+            MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+            builder.addBinaryBody(
+                    "document", new File(strFileAbsPath), ContentType.APPLICATION_PDF, filename);
 
             HttpEntity multipart = builder.build();
             httppost.setEntity(multipart);

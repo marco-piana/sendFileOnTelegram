@@ -5,9 +5,22 @@ import java.util.Scanner;
 
 public class Main {
 
+    private static final String header = "*****************************************************************************\n" +
+            "*       _  _ _ ____ _ _    _  ___  ____ _     ____ _  _ ____ ____ ____      *\n" +
+            "*       |  | | | __ | |    |  |  \\ |___ |     |___ |  | |  | |    |  |      *\n" +
+            "*        \\/  | |__] | |___ |  |__/ |___ |___  |    |__| |__| |___ |__|      *\n" +
+            "* ____ ____ _  _ ____ _  _ ___  ____  ___  _  ____ ____ _  _ ____ _  _ ____ *\n" +
+            "* |    |  | |\\/| |__| |\\ | |  \\ |  |  |  \\ |  [__  |__| |  | |  | |\\ | |__| *\n" +
+            "* |___ |__| |  | |  | | \\| |__/ |__|  |__/ |  ___] |  |  \\/  |__| | \\| |  | *\n" +
+            "*****************************************************************************\n" +
+            "* Pubblicazione Orari                                   (Ver. 1.1 20221012) *\n" +
+            "*****************************************************************************\n";
+
+    public static final String msgClose = "Use: java -jar sendFileOnTelegram.jar <comando> <parametro1 parametro2...>";
+
     private static HttpURLConnection con;
 
-    public final static void clearConsole() {
+    public static final void clearConsole() {
         try
         {
             final String os = System.getProperty("os.name");
@@ -27,25 +40,20 @@ public class Main {
         }
     }
 
+
     public static void main(String[] args) throws IOException, InterruptedException {
-
-
         clearConsole();
-
-        String header = "*****************************************************************************\n" +
-        "*       _  _ _ ____ _ _    _  ___  ____ _     ____ _  _ ____ ____ ____      *\n" +
-        "*       |  | | | __ | |    |  |  \\ |___ |     |___ |  | |  | |    |  |      *\n" +
-        "*        \\/  | |__] | |___ |  |__/ |___ |___  |    |__| |__| |___ |__|      *\n" +
-        "* ____ ____ _  _ ____ _  _ ___  ____  ___  _  ____ ____ _  _ ____ _  _ ____ *\n" +
-        "* |    |  | |\\/| |__| |\\ | |  \\ |  |  |  \\ |  [__  |__| |  | |  | |\\ | |__| *\n" +
-        "* |___ |__| |  | |  | | \\| |__/ |__|  |__/ |  ___] |  |  \\/  |__| | \\| |  | *\n" +
-        "*****************************************************************************\n" +
-        "* Invio file PDF al canale Telegram VVF-SV Orario Funzionari (Versione 0.1) *\n" +
-        "*****************************************************************************\n";
-        System.out.println(header);
+        System.out.println(Main.header);
 
 
-        // Recupero la username in base al login di sistema
+        // Se viene eseguito senza parametri interrompo l'esecuzione
+        if (args == null || args.length != 2) {
+            // Fine
+            System.out.println(Main.msgClose);
+            System.exit(0);
+        }
+
+        //***** Recupero username e password per l'accesso al proxy
         String username = System.getProperty("user.name");
         String password;
         Console console = System.console();
@@ -56,6 +64,21 @@ public class Main {
         } else {
             char[] passwordArray = console.readPassword("Inserisci la password dell'utente " + username + "@dipvvf.it di accesso al proxy: ");
             password = String.valueOf(passwordArray);
+        }
+
+        // Verifica della password inserita
+        if(password.length() == 0) {
+            System.out.println("Il file \"" + args[0] + "\" non è stato inviato.");
+            System.exit(0);
+        }
+
+        //**** Tentativo di esecuzione del comando di args
+        try {
+            Commands c = new Commands(username, password, args);
+        }
+        catch (ExceptionCommands e) {
+            System.out.println(String.format("%s \n %s", e.getMessage(), Main.msgClose));
+            System.exit(0);
         }
 
 
@@ -79,5 +102,33 @@ public class Main {
             c.getMe();
 //            c.getUpdates();
         }
+
+        // Verifica dei parametri da prompt
+        if (args == null || args.length == 0) {
+            // Fine
+            System.out.println("Use sendFileOnTelegram <comando> <parametro1 parametro2...>");
+            System.exit(0);
+        }
+        else {
+            // In base al numero dei parametri passati in args
+            switch (args.length) {
+                case 0:
+                    System.out.println("Utente autenticato al proxy: invio parametri eseguo una getMe sul bot VVF-SV");
+                    Telegram c;
+                    c = new Telegram(username, password);
+                    c.getMe();
+                    break;
+                case 1:
+
+                    break;
+                case 2:
+                    break;
+                default:
+                    System.out.println("Use sendFileOnTelegram <comando> <parametro1 parametro2...>");
+                    System.exit(0);
+            }
+        }
+
+
     }
 }
